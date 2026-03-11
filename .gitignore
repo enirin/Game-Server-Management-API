@@ -1,0 +1,17 @@
+# Python cache and artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.venv/
+
+# Local config (may contain secrets)
+config.yaml
+
+# OS/editor
+.DS_Store
+.vscode/

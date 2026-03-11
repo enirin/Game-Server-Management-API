@@ -1,0 +1,19 @@
+discord:
+  tell_url: http://127.0.0.1:5050/tell
+  web_endpoint_token: ""
+  request_timeout_sec: 5
+
+servers:
+  - server_id: 7dtd
+    game: 7dtd
+    container_name: 7dtd-server01
+    address: 192.168.1.10
+    max_players: 8
+    channel_id: 123456789012345678
+
+  - server_id: valheim
+    game: valheim
+    container_name: valheim-server01
+    address: 192.168.1.11
+    max_players: 10
+    # channel_id を省略すると Discord Bot 側の既定送信先を使用
