@@ -5,7 +5,7 @@ import time
 import docker
 import requests
 
-from log_parsers import get_parser
+from games import create_game_plugin
 
 
 def stream_docker_log_lines(client, container_name):
@@ -42,7 +42,7 @@ def watch_server_logs(client, notifier, server_config):
     container_name = server_config["container_name"]
     log_file_path = server_config["log_file_path"]
     channel_id = server_config.get("channel_id")
-    parser = get_parser(game)
+    plugin = create_game_plugin(game)
     source_name = container_name if runtime == "docker" else (log_file_path or "native")
     log_prefix = f"[{server_id}/{source_name}]"
 
@@ -58,7 +58,7 @@ def watch_server_logs(client, notifier, server_config):
                     continue
 
                 print(f"{log_prefix} {message}")
-                event = parser.parse(message)
+                event = plugin.parse_presence_event(message)
                 if event:
                     try:
                         notifier.send_presence_event(

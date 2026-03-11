@@ -1,9 +1,10 @@
 import os
-import re
 import shlex
 import subprocess
 
 import docker
+
+from games import create_game_plugin
 
 
 def resolve_docker_status(raw_status):
@@ -62,40 +63,29 @@ def read_container_metrics(container):
     return cpu_pct, mem_gb
 
 
-def read_server_day_from_container(container):
-    try:
-        logs = container.logs(tail=3000).decode("utf-8", errors="ignore")
-        day_match = re.findall(r"Day[:\\s]+(\\d+)", logs, re.IGNORECASE)
-        return int(day_match[-1]) if day_match else 0
-    except Exception:
-        return 0
-
-
-def read_server_day_from_file(log_file_path):
-    try:
-        with open(log_file_path, "rb") as f:
-            f.seek(0, os.SEEK_END)
-            size = f.tell()
-            f.seek(max(size - 1024 * 1024, 0), os.SEEK_SET)
-            logs = f.read().decode("utf-8", errors="ignore")
-
-        day_match = re.findall(r"Day[:\s]+(\d+)", logs, re.IGNORECASE)
-        return int(day_match[-1]) if day_match else 0
-    except Exception:
-        return 0
-
-
 def build_server_status(client, server_config):
     server_id = server_config["server_id"]
+    game = server_config["game"]
     runtime = server_config["runtime"]
     container_name = server_config["container_name"]
     log_file_path = server_config["log_file_path"]
     address = server_config["address"]
     max_players = server_config["max_players"]
+    plugin = create_game_plugin(game)
 
     if runtime == "native":
         status = get_native_server_status(server_config)
-        day = read_server_day_from_file(log_file_path) if status == "online" else 0
+        day = 0
+        if status == "online":
+            try:
+                with open(log_file_path, "rb") as f:
+                    f.seek(0, os.SEEK_END)
+                    size = f.tell()
+                    f.seek(max(size - 1024 * 1024, 0), os.SEEK_SET)
+                    logs = f.read().decode("utf-8", errors="ignore")
+                day = plugin.extract_day(logs)
+            except Exception:
+                day = 0
         return {
             "name": server_id,
             "status": status,
@@ -116,7 +106,11 @@ def build_server_status(client, server_config):
         day = 0
         if status == "online":
             cpu_pct, mem_gb = read_container_metrics(container)
-            day = read_server_day_from_container(container)
+            try:
+                logs = container.logs(tail=3000).decode("utf-8", errors="ignore")
+                day = plugin.extract_day(logs)
+            except Exception:
+                day = 0
 
         return {
             "name": server_id,

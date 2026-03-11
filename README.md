@@ -9,6 +9,10 @@
 
 デフォルトの Base URL は `http://localhost:5000` です。
 
+## 利用者向け資料
+
+- Discord連携を含む構築例: `DISCORD_GAME_SERVER_MANAGEMENT_GUIDE.md`
+
 ## アプリケーション概要
 
 このAPIは、`config.yaml` に定義した複数サーバーを管理対象として扱います。
@@ -48,8 +52,22 @@ cp config.yaml.sample config.yaml
 - `config_loader.py`: `config.yaml` の読み込み・バリデーション・正規化
 - `server_runtime.py`: サーバー状態取得、および `start/stop` 実行ロジック（docker/native）
 - `log_watcher.py`: リアルタイムログ追従、ログ解析器呼び出し、Discord `/tell` 通知トリガー
-- `log_parsers.py`: ゲーム別ログ解析（7days2die/valheim）
+- `games/`: ゲーム固有プラグイン群（ログ解析、日数抽出）
+- `games/registry.py`: `game` エイリアスとプラグインの対応表
+- `log_parsers.py`: 旧インポート互換レイヤー（新規実装では原則未使用）
 - `discord_notifier.py`: `/tell` 送信と共通プロンプト組み立て
+
+## 新しいゲーム対応（コントリビュータ向け）
+
+別ゲームへ対応するPRは、基本的に `games/` 配下の追加だけで完結できます。
+
+1. `games/<new_game>.py` を追加し、`GamePlugin` を継承したクラスを実装
+2. `parse_presence_event()` にログイン/ログアウト検知ロジックを実装
+3. 必要なら `extract_day()` をゲーム固有フォーマットに合わせてオーバーライド
+4. `games/registry.py` の `PLUGIN_CLASSES` と `ALIASES` に登録
+5. `config.yaml` の `servers[].game` にエイリアスを設定して動作確認
+
+この構成により、既存の API ルーティングや runtime 制御コードを触らずに機能拡張できます。
 
 ## config.yaml 形式
 

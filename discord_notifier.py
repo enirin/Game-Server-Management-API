@@ -2,7 +2,7 @@ from typing import Optional
 
 import requests
 
-from log_parsers import PresenceEvent
+from games.base import PresenceEvent
 
 
 class DiscordNotifier:
