@@ -64,4 +64,4 @@ def stop_server(server_name):
 
 if __name__ == "__main__":
     start_log_watchers(client, notifier, SERVERS)
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=CONFIG["api"]["port"])

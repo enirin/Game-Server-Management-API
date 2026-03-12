@@ -18,6 +18,9 @@ def load_config(config_path):
     web_endpoint_token = str(discord_cfg.get("web_endpoint_token", ""))
     timeout_sec = int(discord_cfg.get("request_timeout_sec", 5))
 
+    api_cfg = config.get("api", {})
+    port = int(api_cfg.get("port", 5000))
+
     normalized_servers = []
     for index, server in enumerate(config["servers"]):
         if not isinstance(server, dict):
@@ -71,5 +74,8 @@ def load_config(config_path):
             "tell_url": tell_url,
             "web_endpoint_token": web_endpoint_token,
             "request_timeout_sec": timeout_sec,
+        },
+        "api": {
+            "port": port,
         },
     }

@@ -1,3 +1,6 @@
+api:
+  port: 5000
+
 discord:
   tell_url: http://127.0.0.1:5050/tell
   web_endpoint_token: ""

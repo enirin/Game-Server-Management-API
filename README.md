@@ -7,7 +7,7 @@
 - `POST /start/{server_name}`
 - `POST /stop/{server_name}`
 
-デフォルトの Base URL は `http://localhost:5000` です。
+デフォルトの Base URL は `http://localhost:5000` です。`config.yaml` の `api.port` で変更できます。
 
 ## 利用者向け資料
 
@@ -63,7 +63,7 @@ cp config.yaml.sample config.yaml
 
 別ゲームへ対応するPRは、基本的に `games/` 配下の追加だけで完結できます。
 
-1. `games/<new_game>.py` を追加し、`GamePlugin` を継承したクラスを実装
+1. `games/<plugin_name>/plugin.py` を追加し、`GamePlugin` を継承したクラスを実装
 2. `parse_presence_event()` にログイン/ログアウト検知ロジックを実装
 3. 必要なら `extract_day()` をゲーム固有フォーマットに合わせてオーバーライド
 4. `games/registry.py` の `PLUGIN_CLASSES` と `ALIASES` に登録
@@ -76,6 +76,9 @@ cp config.yaml.sample config.yaml
 ## config.yaml 形式
 
 ```yaml
+api:
+  port: 5000
+
 discord:
   tell_url: http://127.0.0.1:5050/tell
   web_endpoint_token: ""
@@ -122,6 +125,10 @@ servers:
 - `tell_url`: Discord Bot の `/tell` エンドポイント
 - `web_endpoint_token`: Bot 側に設定した場合、`X-Send-Token` ヘッダで送る値
 - `request_timeout_sec`: `/tell` 呼び出しのタイムアウト秒
+
+`api` セクションの意味:
+
+- `port`: このAPIが待ち受けるポート番号
 
 ## 起動方法
 
