@@ -13,6 +13,10 @@ class ValheimPlugin(GamePlugin):
         self._steam_id_pattern = re.compile(r"SteamID\s+(\d+)", re.IGNORECASE)
         self._closing_socket_pattern = re.compile(r"Closing socket\s+(\d+)", re.IGNORECASE)
 
+    def get_player_count(self) -> int:
+        """現在名簿に載っている人数を返す"""
+        return len(self._steam_to_name)
+
     def parse_presence_event(self, line: str) -> Optional[PresenceEvent]:
         if "Got connection SteamID" in line:
             match = self._steam_id_pattern.search(line)
