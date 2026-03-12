@@ -8,6 +8,7 @@ from config_loader import load_config
 from discord_notifier import DiscordNotifier
 from log_watcher import start_log_watchers
 from server_runtime import build_server_status, start_server_instance, stop_server_instance
+from games import create_game_plugin # 追加
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +19,11 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
 
 CONFIG = load_config(CONFIG_PATH)
 SERVERS = CONFIG["servers"]
+
+# 修正：サーバーごとにプラグインのインスタンスを1つだけ作って保持する
+for s in SERVERS:
+    s["plugin_instance"] = create_game_plugin(s["game"])
+
 SERVERS_BY_ID = {server["server_id"]: server for server in SERVERS}
 notifier = DiscordNotifier(
     tell_url=CONFIG["discord"]["tell_url"],
@@ -36,6 +42,7 @@ def find_server_or_404(server_name):
 @app.route("/list", methods=["GET"])
 def list_servers():
     try:
+        # 修正：解析器のインスタンスを渡す
         payload = [build_server_status(client, server) for server in SERVERS]
         return jsonify({"servers": payload})
     except Exception as e:

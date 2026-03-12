@@ -4,8 +4,7 @@ import subprocess
 
 import docker
 
-from games import create_game_plugin
-
+# create_game_plugin のインポートは不要になる（main.pyから渡されるため）
 
 def resolve_docker_status(raw_status):
     if raw_status == "running":
@@ -65,13 +64,18 @@ def read_container_metrics(container):
 
 def build_server_status(client, server_config):
     server_id = server_config["server_id"]
-    game = server_config["game"]
     runtime = server_config["runtime"]
     container_name = server_config["container_name"]
     log_file_path = server_config["log_file_path"]
     address = server_config["address"]
     max_players = server_config["max_players"]
-    plugin = create_game_plugin(game)
+    # 修正：新しく作るのではなく、保持しているインスタンスを使う
+    plugin = server_config["plugin_instance"]
+
+    # 人数を取得
+    player_count = 0
+    if hasattr(plugin, 'get_player_count'):
+        player_count = plugin.get_player_count()
 
     if runtime == "native":
         status = get_native_server_status(server_config)
@@ -91,7 +95,7 @@ def build_server_status(client, server_config):
             "status": status,
             "address": address,
             "stats": {
-                "players": f"0/{max_players}",
+                "players": f"{player_count}/{max_players}",
                 "cpu": 0.0,
                 "memory": 0.0,
             },
@@ -117,7 +121,7 @@ def build_server_status(client, server_config):
             "status": status,
             "address": address,
             "stats": {
-                "players": f"0/{max_players}",
+                "players": f"{player_count}/{max_players}",
                 "cpu": cpu_pct,
                 "memory": mem_gb,
             },
