@@ -52,7 +52,9 @@ cp config.yaml.sample config.yaml
 - `config_loader.py`: `config.yaml` の読み込み・バリデーション・正規化
 - `server_runtime.py`: サーバー状態取得、および `start/stop` 実行ロジック（docker/native）
 - `log_watcher.py`: リアルタイムログ追従、ログ解析器呼び出し、Discord `/tell` 通知トリガー
-- `games/`: ゲーム固有プラグイン群（ログ解析、日数抽出）
+- `games/`: ゲーム固有プラグイン群のルート
+- `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成
+- `games/<plugin_name>/MAINTENANCE.md`: ゲーム別の保守仕様、実ログ例、通知方針
 - `games/registry.py`: `game` エイリアスとプラグインの対応表
 - `log_parsers.py`: 旧インポート互換レイヤー（新規実装では原則未使用）
 - `discord_notifier.py`: `/tell` 送信と共通プロンプト組み立て
@@ -66,6 +68,8 @@ cp config.yaml.sample config.yaml
 3. 必要なら `extract_day()` をゲーム固有フォーマットに合わせてオーバーライド
 4. `games/registry.py` の `PLUGIN_CLASSES` と `ALIASES` に登録
 5. `config.yaml` の `servers[].game` にエイリアスを設定して動作確認
+
+ゲーム別の判断基準や通知文面例は、各 `games/<plugin_name>/MAINTENANCE.md` に記載します。
 
 この構成により、既存の API ルーティングや runtime 制御コードを触らずに機能拡張できます。
 
@@ -196,4 +200,5 @@ chmod +x start.sh
 - `players` の現在値はゲームごとの取得方法が異なるため、現状は `0/max_players` を返します。
 - `day` は `runtime=docker` の場合はコンテナログ、`runtime=native` の場合は `log_file_path` 末尾から抽出します。
 - API起動中は、`runtime=docker` はコンテナログ、`runtime=native` はログファイル追従でリアルタイム出力します。
-- `7dtd` と `valheim` はそれぞれ専用のログ解析ロジックを分離実装しており、ログイン/ログアウトを検知すると共通のプロンプト生成処理で `/tell` にPOSTします。
+- `7dtd` と `valheim` はそれぞれ専用のログ解析ロジックを分離実装しており、接続ノイズを除外してログイン/ログアウト確定イベントだけを `/tell` 通知に使います。
+- tellへ流す文面はゲームプラグイン側で組み立てるため、ゲームごとに歓迎/退出メッセージの方針を調整できます。

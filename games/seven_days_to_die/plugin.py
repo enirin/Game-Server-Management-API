@@ -29,3 +29,18 @@ class SevenDaysToDiePlugin(GamePlugin):
                 return PresenceEvent(event_type="logout", player_name=player_name)
 
         return None
+
+    def build_presence_prompt(self, server_id: str, event: PresenceEvent) -> str:
+        if event.event_type == "login":
+            return (
+                f"【システム通知】7 Days to Dieサーバー『{server_id}』に『{event.player_name}』が参加しました。"
+                f" 自然で短い歓迎メッセージを作成してください。発話には必ず『{event.player_name}』を含めてください。"
+            )
+
+        if event.event_type == "logout":
+            return (
+                f"【システム通知】7 Days to Dieサーバー『{server_id}』で『{event.player_name}』が退出しました。"
+                f" 自然で短いねぎらいメッセージを作成してください。発話には必ず『{event.player_name}』を含めてください。"
+            )
+
+        return super().build_presence_prompt(server_id, event)

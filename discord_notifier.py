@@ -1,8 +1,4 @@
-from typing import Optional
-
 import requests
-
-from games.base import PresenceEvent
 
 
 class DiscordNotifier:
@@ -11,19 +7,8 @@ class DiscordNotifier:
         self.web_endpoint_token = web_endpoint_token
         self.timeout_sec = timeout_sec
 
-    def _build_prompt(self, server_id: str, game: str, event: PresenceEvent) -> str:
-        action_map = {
-            "login": "ログイン",
-            "logout": "ログアウト",
-        }
-        action = action_map.get(event.event_type, event.event_type)
-        return (
-            f"システム通知: {server_id} ({game}) でプレイヤー '{event.player_name}' が{action}しました。"
-            f" プレイヤー名を含めて短く案内してください。"
-        )
-
-    def send_presence_event(self, server_id: str, game: str, event: PresenceEvent, channel_id: Optional[int]):
-        payload = {"prompt": self._build_prompt(server_id=server_id, game=game, event=event)}
+    def send_prompt(self, prompt: str, channel_id=None):
+        payload = {"prompt": prompt}
         if channel_id is not None:
             payload["channel_id"] = channel_id
 

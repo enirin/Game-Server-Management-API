@@ -60,13 +60,9 @@ def watch_server_logs(client, notifier, server_config):
                 print(f"{log_prefix} {message}")
                 event = plugin.parse_presence_event(message)
                 if event:
+                    prompt = plugin.build_presence_prompt(server_id, event)
                     try:
-                        notifier.send_presence_event(
-                            server_id=server_id,
-                            game=game,
-                            event=event,
-                            channel_id=channel_id,
-                        )
+                        notifier.send_prompt(prompt=prompt, channel_id=channel_id)
                         print(f"{log_prefix} sent presence event: {event.event_type} {event.player_name}")
                     except requests.RequestException as e:
                         print(f"{log_prefix} failed to send tell request: {e}")
