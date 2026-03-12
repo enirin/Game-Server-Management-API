@@ -4,7 +4,7 @@ import subprocess
 
 import docker
 
-# create_game_plugin のインポートは不要になる（main.pyから渡されるため）
+# 共通の解析器インスタンスを main.py から受け取って使用するように変更されています
 
 def resolve_docker_status(raw_status):
     if raw_status == "running":
@@ -23,8 +23,8 @@ def run_shell_command(command, timeout_sec=15):
 
 
 def get_native_server_status(server_config):
-    status_command = server_config["status_command"]
-    process_name = server_config["process_name"]
+    status_command = server_config.get("status_command")
+    process_name = server_config.get("process_name")
 
     if status_command:
         code, _, _ = run_shell_command(status_command)
@@ -69,25 +69,31 @@ def build_server_status(client, server_config):
     log_file_path = server_config["log_file_path"]
     address = server_config["address"]
     max_players = server_config["max_players"]
-    # 修正：新しく作るのではなく、保持しているインスタンスを使う
-    plugin = server_config["plugin_instance"]
+    
+    # main.py で生成された共通のプラグインインスタンスを取得
+    plugin = server_config.get("plugin_instance")
 
-    # 人数を取得
+    # プレイヤー情報取得（人数と名前のリスト）
     player_count = 0
-    if hasattr(plugin, 'get_player_count'):
-        player_count = plugin.get_player_count()
+    player_names = []
+    if plugin:
+        if hasattr(plugin, 'get_player_count'):
+            player_count = plugin.get_player_count()
+        if hasattr(plugin, 'get_player_names'):
+            player_names = plugin.get_player_names()
 
     if runtime == "native":
         status = get_native_server_status(server_config)
         day = 0
         if status == "online":
             try:
-                with open(log_file_path, "rb") as f:
-                    f.seek(0, os.SEEK_END)
-                    size = f.tell()
-                    f.seek(max(size - 1024 * 1024, 0), os.SEEK_SET)
-                    logs = f.read().decode("utf-8", errors="ignore")
-                day = plugin.extract_day(logs)
+                if plugin:
+                    with open(log_file_path, "rb") as f:
+                        f.seek(0, os.SEEK_END)
+                        size = f.tell()
+                        f.seek(max(size - 1024 * 1024, 0), os.SEEK_SET)
+                        logs = f.read().decode("utf-8", errors="ignore")
+                    day = plugin.extract_day(logs)
             except Exception:
                 day = 0
         return {
@@ -99,6 +105,7 @@ def build_server_status(client, server_config):
                 "cpu": 0.0,
                 "memory": 0.0,
             },
+            "players_list": player_names,
             "day": day,
         }
 
@@ -111,8 +118,9 @@ def build_server_status(client, server_config):
         if status == "online":
             cpu_pct, mem_gb = read_container_metrics(container)
             try:
-                logs = container.logs(tail=3000).decode("utf-8", errors="ignore")
-                day = plugin.extract_day(logs)
+                if plugin:
+                    logs = container.logs(tail=3000).decode("utf-8", errors="ignore")
+                    day = plugin.extract_day(logs)
             except Exception:
                 day = 0
 
@@ -125,6 +133,7 @@ def build_server_status(client, server_config):
                 "cpu": cpu_pct,
                 "memory": mem_gb,
             },
+            "players_list": player_names,
             "day": day,
         }
     except docker.errors.NotFound:
@@ -137,6 +146,7 @@ def build_server_status(client, server_config):
                 "cpu": 0.0,
                 "memory": 0.0,
             },
+            "players_list": [],
             "day": 0,
         }
 
