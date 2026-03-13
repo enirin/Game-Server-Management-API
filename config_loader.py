@@ -2,6 +2,8 @@ import os
 
 import yaml
 
+from games import get_supported_game_aliases
+
 
 def normalize_server_aliases(raw_aliases, index):
     if raw_aliases is None:
@@ -41,6 +43,7 @@ def load_config(config_path):
 
     api_cfg = config.get("api", {})
     port = int(api_cfg.get("port", 5000))
+    supported_games = set(get_supported_game_aliases())
 
     normalized_servers = []
     claimed_names = {}
@@ -69,6 +72,14 @@ def load_config(config_path):
         stop_command = server.get("stop_command")
         server_aliases = normalize_server_aliases(server.get("server_aliases"), index)
         server_id = str(server["server_id"])
+        game = str(server["game"]).strip().lower()
+
+        if game not in supported_games:
+            supported_text = ", ".join(sorted(supported_games))
+            raise ValueError(
+                f"servers[{index}].game '{server['game']}' is not supported. "
+                f"Supported values: {supported_text}"
+            )
 
         if runtime == "docker" and not container_name:
             raise ValueError(f"servers[{index}] requires container_name when runtime=docker")
@@ -82,7 +93,7 @@ def load_config(config_path):
         normalized_servers.append(
             {
                 "server_id": server_id,
-                "game": str(server["game"]),
+                "game": game,
                 "runtime": runtime,
                 "container_name": str(container_name or ""),
                 "address": str(server["address"]),
