@@ -1,7 +1,7 @@
 import re
 from typing import Dict, Optional
 
-from games.base import GamePlugin, PresenceEvent
+from games.base import GamePlugin, PresenceEvent, ServerStatusContext
 
 
 class ValheimPlugin(GamePlugin):
@@ -63,3 +63,18 @@ class ValheimPlugin(GamePlugin):
             )
 
         return super().build_presence_prompt(server_id, event)
+
+    def extend_server_status(self, status_payload: dict, context: ServerStatusContext) -> dict:
+        if context.status != "online" or not context.logs_text:
+            return status_payload
+
+        active_players = self._estimate_active_players(context.logs_text)
+        max_players = context.server_config["max_players"]
+        status_payload["stats"]["players"] = f"{active_players}/{max_players}"
+        return status_payload
+
+    def _estimate_active_players(self, logs_text: str) -> int:
+        replay_parser = ValheimPlugin()
+        for line in logs_text.splitlines():
+            replay_parser.parse_presence_event(line)
+        return len(replay_parser._steam_to_name)

@@ -18,6 +18,12 @@
 
 - `Player '<player_name>' died`
 
+## players 推定方針
+
+- サーバーが `online` のときのみ、直近ログの `joined the game` / `left the game` を再生して現在人数を推定します
+- `died` イベントは在席人数の増減には使いません
+- サーバーが `offline` のときは `0/max_players` を固定で返します
+
 ## tell に流す文面方針
 
 ### ログイン時

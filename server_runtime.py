@@ -8,6 +8,7 @@ except ImportError:
     docker = None
 
 from games import create_game_plugin
+from games.base import ServerStatusContext
 
 
 class DockerUnavailableError(RuntimeError):
@@ -46,8 +47,20 @@ def get_docker_client():
         raise DockerUnavailableError(f"Docker is unavailable: {e}") from e
 
 
+def finalize_server_status(plugin, server_config, status_payload, runtime, status, logs_text="", cpu_pct=0.0, mem_gb=0.0):
+    context = ServerStatusContext(
+        server_config=server_config,
+        runtime=runtime,
+        status=status,
+        logs_text=logs_text,
+        cpu_pct=cpu_pct,
+        mem_gb=mem_gb,
+    )
+    return plugin.extend_server_status(status_payload, context)
+
+
 def build_offline_status(server_config):
-    return {
+    payload = {
         "name": server_config["server_id"],
         "server_aliases": server_config["server_aliases"],
         "status": "offline",
@@ -59,6 +72,8 @@ def build_offline_status(server_config):
         },
         "day": 0,
     }
+    plugin = create_game_plugin(server_config["game"])
+    return finalize_server_status(plugin, server_config, payload, server_config["runtime"], "offline")
 
 
 def get_native_server_status(server_config):
@@ -114,17 +129,18 @@ def build_server_status(server_config):
     if runtime == "native":
         status = get_native_server_status(server_config)
         day = 0
+        logs_text = ""
         if status == "online":
             try:
                 with open(log_file_path, "rb") as f:
                     f.seek(0, os.SEEK_END)
                     size = f.tell()
                     f.seek(max(size - 1024 * 1024, 0), os.SEEK_SET)
-                    logs = f.read().decode("utf-8", errors="ignore")
-                day = plugin.extract_day(logs)
+                    logs_text = f.read().decode("utf-8", errors="ignore")
+                day = plugin.extract_day(logs_text)
             except Exception:
                 day = 0
-        return {
+        payload = {
             "name": server_id,
             "server_aliases": server_config["server_aliases"],
             "status": status,
@@ -136,6 +152,7 @@ def build_server_status(server_config):
             },
             "day": day,
         }
+        return finalize_server_status(plugin, server_config, payload, runtime, status, logs_text=logs_text)
 
     try:
         client = get_docker_client()
@@ -144,15 +161,16 @@ def build_server_status(server_config):
 
         cpu_pct, mem_gb = 0.0, 0.0
         day = 0
+        logs_text = ""
         if status == "online":
             cpu_pct, mem_gb = read_container_metrics(container)
             try:
-                logs = container.logs(tail=3000).decode("utf-8", errors="ignore")
-                day = plugin.extract_day(logs)
+                logs_text = container.logs(tail=3000).decode("utf-8", errors="ignore")
+                day = plugin.extract_day(logs_text)
             except Exception:
                 day = 0
 
-        return {
+        payload = {
             "name": server_id,
             "server_aliases": server_config["server_aliases"],
             "status": status,
@@ -164,6 +182,16 @@ def build_server_status(server_config):
             },
             "day": day,
         }
+        return finalize_server_status(
+            plugin,
+            server_config,
+            payload,
+            runtime,
+            status,
+            logs_text=logs_text,
+            cpu_pct=cpu_pct,
+            mem_gb=mem_gb,
+        )
     except DockerUnavailableError:
         return build_offline_status(server_config)
     except DOCKER_NOT_FOUND_ERRORS:

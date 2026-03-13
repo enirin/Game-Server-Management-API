@@ -10,6 +10,16 @@ class PresenceEvent:
     source_id: Optional[str] = None
 
 
+@dataclass
+class ServerStatusContext:
+    server_config: dict
+    runtime: str
+    status: str
+    logs_text: str = ""
+    cpu_pct: float = 0.0
+    mem_gb: float = 0.0
+
+
 class GamePlugin:
     ALIASES = set()
 
@@ -26,6 +36,9 @@ class GamePlugin:
             f"システム通知: {server_id} でプレイヤー '{event.player_name}' が{action}しました。"
             f" プレイヤー名を含めて短く案内してください。"
         )
+
+    def extend_server_status(self, status_payload: dict, context: ServerStatusContext) -> dict:
+        return status_payload
 
     def extract_day(self, logs_text: str) -> int:
         day_match = re.findall(r"Day[:\\s]+(\\d+)", logs_text, re.IGNORECASE)

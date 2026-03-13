@@ -55,6 +55,7 @@ cp config.yaml.sample config.yaml
 - `log_watcher.py`: リアルタイムログ追従、ログ解析器呼び出し、Discord `/tell` 通知トリガー
 - `games/`: ゲーム固有プラグイン群のルート
 - `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成
+- `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成、ステータス拡張
 - `games/<plugin_name>/MAINTENANCE.md`: ゲーム別の保守仕様、実ログ例、通知方針
 - `games/registry.py`: `game` エイリアスとプラグインの対応表
 - `log_parsers.py`: 旧インポート互換レイヤー（新規実装では原則未使用）
@@ -67,8 +68,9 @@ cp config.yaml.sample config.yaml
 1. `games/<plugin_name>/plugin.py` を追加し、`GamePlugin` を継承したクラスを実装
 2. `parse_presence_event()` にログイン/ログアウト検知ロジックを実装
 3. 必要なら `extract_day()` をゲーム固有フォーマットに合わせてオーバーライド
-4. `games/registry.py` の `PLUGIN_CLASSES` と `ALIASES` に登録
-5. `config.yaml` の `servers[].game` にエイリアスを設定して動作確認
+4. 必要なら `extend_server_status()` で `players` やゲーム固有ステータスを上書き
+5. `games/registry.py` の `PLUGIN_CLASSES` と `ALIASES` に登録
+6. `config.yaml` の `servers[].game` にエイリアスを設定して動作確認
 
 ゲーム別の判断基準や通知文面例は、各 `games/<plugin_name>/MAINTENANCE.md` に記載します。
 
