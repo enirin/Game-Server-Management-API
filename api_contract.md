@@ -23,6 +23,7 @@
         "address": "192.168.1.10",  
         "stats": {  
           "players": "2/8",  
+          "player_names": ["Alice", "Bob"],
           "cpu": 12.5,  
           "memory": 4.2  
         },  
@@ -74,6 +75,7 @@
 | address | string | 接続用IPアドレス |
 | day | integer | ゲーム内の経過日数 |
 | stats.players | string | 現在のプレイヤー数 (例: "2/8") |
+| stats.player_names | array(string) | 現在ログイン中のプレイヤー名の配列 |
 | stats.cpu | number | CPU使用率 (%) |
 | stats.memory | number | メモリ使用量 (GB) |
 

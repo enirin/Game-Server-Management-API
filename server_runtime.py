@@ -5,6 +5,7 @@ import subprocess
 import docker
 
 from games import create_game_plugin
+from player_tracker import tracker as player_tracker
 
 
 def resolve_docker_status(raw_status):
@@ -76,7 +77,9 @@ def build_server_status(client, server_config):
     if runtime == "native":
         status = get_native_server_status(server_config)
         day = 0
+        players_list = []
         if status == "online":
+            players_list = player_tracker.get_players(server_id)
             try:
                 with open(log_file_path, "rb") as f:
                     f.seek(0, os.SEEK_END)
@@ -86,12 +89,16 @@ def build_server_status(client, server_config):
                 day = plugin.extract_day(logs)
             except Exception:
                 day = 0
+        else:
+            player_tracker.clear_players(server_id)
+            
         return {
             "name": server_id,
             "status": status,
             "address": address,
             "stats": {
-                "players": f"0/{max_players}",
+                "players": f"{len(players_list)}/{max_players}",
+                "player_names": players_list,
                 "cpu": 0.0,
                 "memory": 0.0,
             },
@@ -104,20 +111,25 @@ def build_server_status(client, server_config):
 
         cpu_pct, mem_gb = 0.0, 0.0
         day = 0
+        players_list = []
         if status == "online":
+            players_list = player_tracker.get_players(server_id)
             cpu_pct, mem_gb = read_container_metrics(container)
             try:
                 logs = container.logs(tail=3000).decode("utf-8", errors="ignore")
                 day = plugin.extract_day(logs)
             except Exception:
                 day = 0
+        else:
+            player_tracker.clear_players(server_id)
 
         return {
             "name": server_id,
             "status": status,
             "address": address,
             "stats": {
-                "players": f"0/{max_players}",
+                "players": f"{len(players_list)}/{max_players}",
+                "player_names": players_list,
                 "cpu": cpu_pct,
                 "memory": mem_gb,
             },

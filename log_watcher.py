@@ -6,6 +6,7 @@ import docker
 import requests
 
 from games import create_game_plugin
+from player_tracker import tracker as player_tracker
 
 
 def stream_docker_log_lines(client, container_name):
@@ -60,6 +61,11 @@ def watch_server_logs(client, notifier, server_config):
                 print(f"{log_prefix} {message}")
                 event = plugin.parse_presence_event(message)
                 if event:
+                    if event.event_type == "login":
+                        player_tracker.add_player(server_id, event.player_name)
+                    elif event.event_type == "logout":
+                        player_tracker.remove_player(server_id, event.player_name)
+
                     prompt = plugin.build_presence_prompt(server_id, event)
                     try:
                         notifier.send_prompt(prompt=prompt, channel_id=channel_id)
