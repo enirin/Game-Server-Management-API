@@ -2,9 +2,22 @@ import os
 import shlex
 import subprocess
 
-import docker
+try:
+    import docker
+except ImportError:
+    docker = None
 
 from games import create_game_plugin
+
+
+class DockerUnavailableError(RuntimeError):
+    pass
+
+
+if docker is not None:
+    DOCKER_NOT_FOUND_ERRORS = (docker.errors.NotFound,)
+else:
+    DOCKER_NOT_FOUND_ERRORS = (LookupError,)
 
 
 def resolve_docker_status(raw_status):
@@ -21,6 +34,30 @@ def run_shell_command(command, timeout_sec=15):
         return result.returncode, (result.stdout or ""), (result.stderr or "")
     except subprocess.TimeoutExpired:
         return 124, "", "command timed out"
+
+
+def get_docker_client():
+    if docker is None:
+        raise DockerUnavailableError("Docker SDK for Python is not installed")
+
+    try:
+        return docker.from_env()
+    except Exception as e:
+        raise DockerUnavailableError(f"Docker is unavailable: {e}") from e
+
+
+def build_offline_status(server_config):
+    return {
+        "name": server_config["server_id"],
+        "status": "offline",
+        "address": server_config["address"],
+        "stats": {
+            "players": f"0/{server_config['max_players']}",
+            "cpu": 0.0,
+            "memory": 0.0,
+        },
+        "day": 0,
+    }
 
 
 def get_native_server_status(server_config):
@@ -63,7 +100,7 @@ def read_container_metrics(container):
     return cpu_pct, mem_gb
 
 
-def build_server_status(client, server_config):
+def build_server_status(server_config):
     server_id = server_config["server_id"]
     game = server_config["game"]
     runtime = server_config["runtime"]
@@ -99,6 +136,7 @@ def build_server_status(client, server_config):
         }
 
     try:
+        client = get_docker_client()
         container = client.containers.get(container_name)
         status = resolve_docker_status(container.status)
 
@@ -123,23 +161,16 @@ def build_server_status(client, server_config):
             },
             "day": day,
         }
-    except docker.errors.NotFound:
-        return {
-            "name": server_id,
-            "status": "offline",
-            "address": address,
-            "stats": {
-                "players": f"0/{max_players}",
-                "cpu": 0.0,
-                "memory": 0.0,
-            },
-            "day": 0,
-        }
+    except DockerUnavailableError:
+        return build_offline_status(server_config)
+    except DOCKER_NOT_FOUND_ERRORS:
+        return build_offline_status(server_config)
 
 
-def start_server_instance(client, server_name, server_config):
+def start_server_instance(server_name, server_config):
     try:
         if server_config["runtime"] == "docker":
+            client = get_docker_client()
             container = client.containers.get(server_config["container_name"])
             container.reload()
 
@@ -178,7 +209,13 @@ def start_server_instance(client, server_name, server_config):
             "message": f"Server '{server_name}' is starting...",
             "server_name": server_name,
         }, 200
-    except docker.errors.NotFound:
+    except DockerUnavailableError as e:
+        return {
+            "success": False,
+            "message": str(e),
+            "server_name": server_name,
+        }, 503
+    except DOCKER_NOT_FOUND_ERRORS:
         return {
             "success": False,
             "message": f"Container '{server_config['container_name']}' not found",
@@ -192,9 +229,10 @@ def start_server_instance(client, server_name, server_config):
         }, 500
 
 
-def stop_server_instance(client, server_name, server_config):
+def stop_server_instance(server_name, server_config):
     try:
         if server_config["runtime"] == "docker":
+            client = get_docker_client()
             container = client.containers.get(server_config["container_name"])
             container.reload()
 
@@ -233,7 +271,13 @@ def stop_server_instance(client, server_name, server_config):
             "message": f"Server '{server_name}' is stopping...",
             "server_name": server_name,
         }, 200
-    except docker.errors.NotFound:
+    except DockerUnavailableError as e:
+        return {
+            "success": False,
+            "message": str(e),
+            "server_name": server_name,
+        }, 503
+    except DOCKER_NOT_FOUND_ERRORS:
         return {
             "success": False,
             "message": f"Container '{server_config['container_name']}' not found",

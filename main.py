@@ -1,6 +1,5 @@
 import os
 
-import docker
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -12,7 +11,6 @@ from server_runtime import build_server_status, start_server_instance, stop_serv
 app = Flask(__name__)
 CORS(app)
 
-client = docker.from_env()
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
 
 
@@ -36,7 +34,7 @@ def find_server_or_404(server_name):
 @app.route("/list", methods=["GET"])
 def list_servers():
     try:
-        payload = [build_server_status(client, server) for server in SERVERS]
+        payload = [build_server_status(server) for server in SERVERS]
         return jsonify({"servers": payload})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -48,7 +46,7 @@ def start_server(server_name):
     if error_response:
         return error_response
 
-    payload, status_code = start_server_instance(client, server_name, server)
+    payload, status_code = start_server_instance(server_name, server)
     return jsonify(payload), status_code
 
 
@@ -58,10 +56,10 @@ def stop_server(server_name):
     if error_response:
         return error_response
 
-    payload, status_code = stop_server_instance(client, server_name, server)
+    payload, status_code = stop_server_instance(server_name, server)
     return jsonify(payload), status_code
 
 
 if __name__ == "__main__":
-    start_log_watchers(client, notifier, SERVERS)
+    start_log_watchers(notifier, SERVERS)
     app.run(host="0.0.0.0", port=CONFIG["api"]["port"])

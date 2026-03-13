@@ -2,13 +2,14 @@ import os
 import threading
 import time
 
-import docker
 import requests
 
 from games import create_game_plugin
+from server_runtime import DOCKER_NOT_FOUND_ERRORS, DockerUnavailableError, get_docker_client
 
 
-def stream_docker_log_lines(client, container_name):
+def stream_docker_log_lines(container_name):
+    client = get_docker_client()
     container = client.containers.get(container_name)
     container.reload()
 
@@ -35,7 +36,7 @@ def stream_native_log_lines(log_file_path):
             yield line.rstrip("\r\n")
 
 
-def watch_server_logs(client, notifier, server_config):
+def watch_server_logs(notifier, server_config):
     server_id = server_config["server_id"]
     game = server_config["game"]
     runtime = server_config["runtime"]
@@ -49,7 +50,7 @@ def watch_server_logs(client, notifier, server_config):
     while True:
         try:
             if runtime == "docker":
-                stream_log_lines = stream_docker_log_lines(client, container_name)
+                stream_log_lines = stream_docker_log_lines(container_name)
             else:
                 stream_log_lines = stream_native_log_lines(log_file_path)
 
@@ -66,7 +67,10 @@ def watch_server_logs(client, notifier, server_config):
                         print(f"{log_prefix} sent presence event: {event.event_type} {event.player_name}")
                     except requests.RequestException as e:
                         print(f"{log_prefix} failed to send tell request: {e}")
-        except docker.errors.NotFound:
+        except DockerUnavailableError as e:
+            print(f"{log_prefix} docker unavailable: {e}")
+            time.sleep(10)
+        except DOCKER_NOT_FOUND_ERRORS:
             print(f"{log_prefix} container not found")
             time.sleep(3)
         except FileNotFoundError:
@@ -77,7 +81,7 @@ def watch_server_logs(client, notifier, server_config):
             time.sleep(3)
 
 
-def start_log_watchers(client, notifier, servers):
+def start_log_watchers(notifier, servers):
     for server in servers:
-        thread = threading.Thread(target=watch_server_logs, args=(client, notifier, server), daemon=True)
+        thread = threading.Thread(target=watch_server_logs, args=(notifier, server), daemon=True)
         thread.start()
