@@ -8,4 +8,5 @@
 - `MAINTENANCE.md`: 保守者向け仕様メモ、実ログ例、通知方針
 - `__init__.py`: プラグイン公開用
 
-新しいゲームを追加する場合は、`games/registry.py` に登録してください。
+新しいゲームを追加すると、`games/<plugin_name>/plugin.py` は自動探索されます。
+`plugin.py` 内の `ALIASES` が `servers[].game` の指定候補になります。

@@ -57,7 +57,7 @@ cp config.yaml.sample config.yaml
 - `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成
 - `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成、ステータス拡張
 - `games/<plugin_name>/MAINTENANCE.md`: ゲーム別の保守仕様、実ログ例、通知方針
-- `games/registry.py`: `game` エイリアスとプラグインの対応表
+- `games/registry.py`: `games/*/plugin.py` の自動探索と `game` エイリアス解決
 - `log_parsers.py`: 旧インポート互換レイヤー（新規実装では原則未使用）
 - `discord_notifier.py`: `/tell` 送信と共通プロンプト組み立て
 
@@ -69,12 +69,12 @@ cp config.yaml.sample config.yaml
 2. `parse_presence_event()` にログイン/ログアウト検知ロジックを実装
 3. 必要なら `extract_day()` をゲーム固有フォーマットに合わせてオーバーライド
 4. 必要なら `extend_server_status()` で `players` やゲーム固有ステータスを上書き
-5. `games/registry.py` の `PLUGIN_CLASSES` と `ALIASES` に登録
+5. `ALIASES` に利用したいゲーム識別子を定義
 6. `config.yaml` の `servers[].game` にエイリアスを設定して動作確認
 
 ゲーム別の判断基準や通知文面例は、各 `games/<plugin_name>/MAINTENANCE.md` に記載します。
 
-この構成により、既存の API ルーティングや runtime 制御コードを触らずに機能拡張できます。
+この構成により、既存の API ルーティングや runtime 制御コードを触らずに機能拡張できます。プラグインは `games/*/plugin.py` から自動検出されます。
 
 ## config.yaml 形式
 
