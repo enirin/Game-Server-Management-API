@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from games.base import GamePlugin, PresenceEvent
+from ..base import GamePlugin, PresenceEvent
 
 
 class SevenDaysToDiePlugin(GamePlugin):

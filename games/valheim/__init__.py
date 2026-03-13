@@ -1,3 +1,3 @@
-from games.valheim.plugin import ValheimPlugin
+from .plugin import ValheimPlugin
 
 __all__ = ["ValheimPlugin"]

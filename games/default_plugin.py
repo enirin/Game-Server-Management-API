@@ -1,4 +1,4 @@
-from games.base import GamePlugin
+from .base import GamePlugin
 
 
 class DefaultGamePlugin(GamePlugin):
