@@ -87,6 +87,7 @@ discord:
 
 servers:
   - server_id: 7d2d
+    server_aliases: [7days, seven_days_to_die, zombie]
     game: 7days2die
     runtime: native
     address: 192.168.1.10
@@ -99,6 +100,7 @@ servers:
     channel_id: 123456789012345678
 
   - server_id: valheim
+    server_aliases: [vh, viking]
     game: valheim
     runtime: docker
     container_name: valheim-server01
@@ -109,6 +111,7 @@ servers:
 各項目の意味:
 
 - `server_id`: API上の識別名 (`/start/{server_name}` の `server_name`)
+- `server_aliases` (任意): 自然言語での同定に使う別名一覧。`/list` の `server_aliases` にそのまま返却
 - `game`: ログ解析器の種別 (`7days2die` / `7d2d` / `7daystodie` または `valheim`)
 - `runtime`: `docker` または `native`（省略時は `docker`）
 - `container_name`: Docker 上のコンテナ名（`runtime=docker` のとき必須）
@@ -159,6 +162,7 @@ chmod +x start.sh
   "servers": [
     {
       "name": "7dtd-server-01",
+      "server_aliases": ["7d2d", "7days", "7dtd"],
       "status": "online",
       "address": "192.168.1.10",
       "stats": {

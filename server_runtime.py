@@ -49,6 +49,7 @@ def get_docker_client():
 def build_offline_status(server_config):
     return {
         "name": server_config["server_id"],
+        "server_aliases": server_config["server_aliases"],
         "status": "offline",
         "address": server_config["address"],
         "stats": {
@@ -125,6 +126,7 @@ def build_server_status(server_config):
                 day = 0
         return {
             "name": server_id,
+            "server_aliases": server_config["server_aliases"],
             "status": status,
             "address": address,
             "stats": {
@@ -152,6 +154,7 @@ def build_server_status(server_config):
 
         return {
             "name": server_id,
+            "server_aliases": server_config["server_aliases"],
             "status": status,
             "address": address,
             "stats": {

@@ -3,6 +3,27 @@ import os
 import yaml
 
 
+def normalize_server_aliases(raw_aliases, index):
+    if raw_aliases is None:
+        return []
+
+    if not isinstance(raw_aliases, list):
+        raise ValueError(f"servers[{index}].server_aliases must be a list")
+
+    normalized_aliases = []
+    seen_aliases = set()
+    for alias_index, alias in enumerate(raw_aliases):
+        alias_text = str(alias).strip()
+        if not alias_text:
+            raise ValueError(f"servers[{index}].server_aliases[{alias_index}] must not be empty")
+        if alias_text in seen_aliases:
+            continue
+        seen_aliases.add(alias_text)
+        normalized_aliases.append(alias_text)
+
+    return normalized_aliases
+
+
 def load_config(config_path):
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"config.yaml not found: {config_path}")
@@ -22,6 +43,7 @@ def load_config(config_path):
     port = int(api_cfg.get("port", 5000))
 
     normalized_servers = []
+    claimed_names = {}
     for index, server in enumerate(config["servers"]):
         if not isinstance(server, dict):
             raise ValueError(f"servers[{index}] must be an object")
@@ -45,20 +67,27 @@ def load_config(config_path):
         status_command = server.get("status_command")
         start_command = server.get("start_command")
         stop_command = server.get("stop_command")
+        server_aliases = normalize_server_aliases(server.get("server_aliases"), index)
+        server_id = str(server["server_id"])
 
         if runtime == "docker" and not container_name:
             raise ValueError(f"servers[{index}] requires container_name when runtime=docker")
         if runtime == "native" and not log_file_path:
             raise ValueError(f"servers[{index}] requires log_file_path when runtime=native")
 
+        claimed_names[server_id] = claimed_names.get(server_id, []) + [f"servers[{index}].server_id"]
+        for alias_index, alias in enumerate(server_aliases):
+            claimed_names[alias] = claimed_names.get(alias, []) + [f"servers[{index}].server_aliases[{alias_index}]"]
+
         normalized_servers.append(
             {
-                "server_id": str(server["server_id"]),
+                "server_id": server_id,
                 "game": str(server["game"]),
                 "runtime": runtime,
                 "container_name": str(container_name or ""),
                 "address": str(server["address"]),
                 "max_players": int(server["max_players"]),
+                "server_aliases": server_aliases,
                 "channel_id": channel_id,
                 "log_file_path": str(log_file_path or ""),
                 "process_name": str(process_name or ""),
@@ -67,6 +96,11 @@ def load_config(config_path):
                 "stop_command": str(stop_command or ""),
             }
         )
+
+    duplicate_names = {name: refs for name, refs in claimed_names.items() if len(refs) > 1}
+    if duplicate_names:
+        collisions = "; ".join(f"{name}: {', '.join(refs)}" for name, refs in sorted(duplicate_names.items()))
+        raise ValueError(f"server_id and server_aliases must be unique across all servers: {collisions}")
 
     return {
         "servers": normalized_servers,
