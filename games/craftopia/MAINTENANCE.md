@@ -23,12 +23,14 @@ Craftopia の dedicated server ログには、この API が安定して解釈�
 
 - `parse_presence_event()` は `LOGIN` / `LOGOUT` 行を在席イベントに変換します。
 - `extend_server_status()` は接続ログを再生し、まだ退出していない接続元の数から現在人数を推定します。
-- `extract_day()` は未オーバーライドです。Craftopia では現時点でゲーム内日数の抽出に対応していません。
+- `day` は Craftopia のセーブ DB に入っている `WorldSave.latestDay` から読み取ります。
+- `save_data_path` が未指定でも、`presence_log_path` または `log_file_path` の親ディレクトリ配下にある `data/Worlds/*.db` を自動検出できる構成では日数を読み取れます。
 
 ## 運用上の注意
 
 - Docker 管理の Craftopia でも、コンテナの online / offline 状態や CPU / メモリ使用量は Docker 側から取得します。
 - リアルタイム通知と現在人数の推定は、`servers[].presence_log_path` に指定したログファイルを使います。
+- ゲーム内日数の取得元は標準出力ログではなくセーブ DB です。確実に読み取らせたい場合は `servers[].save_data_path` に `DedicatedServerSave` のホスト側パスを指定してください。
 - この方式ではプレイヤーをゲーム内名ではなく接続元 endpoint で識別するため、Discord 通知にも endpoint が含まれます。
 
 ## 導入手順
@@ -71,6 +73,7 @@ servers:
     address: 192.168.1.12:6587
     max_players: 8
     presence_log_path: /home/enirin/game-servers/craftopia/craftopia-connections.log
+    save_data_path: /home/enirin/game-servers/craftopia/data
 ```
 
 ### 5. スクリプトを常駐させる
@@ -89,4 +92,5 @@ servers:
     address: 192.168.1.12:6587
     max_players: 8
     presence_log_path: /home/enirin/game-servers/craftopia/craftopia-connections.log
+    save_data_path: /home/enirin/game-servers/craftopia/data
 ```

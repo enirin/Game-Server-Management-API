@@ -116,6 +116,7 @@ servers:
     address: 192.168.1.12:6587
     max_players: 8
     presence_log_path: /home/enirin/game-servers/craftopia/craftopia-connections.log
+    save_data_path: /home/enirin/game-servers/craftopia/data
 ```
 
 各項目の意味:
@@ -130,6 +131,7 @@ servers:
 - `channel_id` (任意): `/tell` に送る Discord チャンネルID。省略時は Bot 側既定値
 - `log_file_path`: 監視ログファイルのパス（`runtime=native` のとき必須）
 - `presence_log_path` (任意): 入退室検知専用ログのパス。指定時はリアルタイム通知と人数推定でこちらを優先
+- `save_data_path` (任意): ゲームのセーブデータ配置先。Craftopia では `Worlds/*.db` の `WorldSave.latestDay` から `day` を抽出するときに使います
 - `process_name` (任意): ネイティブプロセス名。`status_command` 未指定時の稼働判定に使用
 - `status_command` (任意): 実行終了コード0で online 判定
 - `start_command` (任意): `POST /start/{server_name}` で実行するコマンド
@@ -225,6 +227,7 @@ chmod +x start.sh
 
 - `status` は `online` / `offline` / `busy` を返します。
 - `players` の現在値はゲームごとの取得方法が異なります。`7dtd`、`valheim`、`craftopia` は専用ロジックで推定します。
+- `stats.cpu` は 0-100 に正規化した CPU 使用率です。Docker コンテナでも複数コア合計値ではなく、この範囲に収まる値を返します。
 - `day` は `runtime=docker` の場合はコンテナログ、`runtime=native` の場合は `log_file_path` 末尾から抽出します。
 - API起動中は、`runtime=docker` はコンテナログ、`runtime=native` はログファイル追従でリアルタイム出力します。
 - `7dtd` と `valheim` はそれぞれ専用のログ解析ロジックを分離実装しており、接続ノイズを除外してログイン/ログアウト確定イベントだけを `/tell` 通知に使います。

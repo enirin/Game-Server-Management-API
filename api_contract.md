@@ -76,6 +76,6 @@
 | address | string | 接続用IPアドレス |
 | day | integer | ゲーム内の経過日数 |
 | stats.players | string | 現在のプレイヤー数 (例: "2/8") |
-| stats.cpu | number | CPU使用率 (%) |
+| stats.cpu | number | CPU使用率 (%)。0-100 に正規化した値 |
 | stats.memory | number | メモリ使用量 (GB) |
 

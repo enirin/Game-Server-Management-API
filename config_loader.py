@@ -71,6 +71,7 @@ def load_config(config_path):
         status_command = server.get("status_command")
         start_command = server.get("start_command")
         stop_command = server.get("stop_command")
+        save_data_path = server.get("save_data_path")
         server_aliases = normalize_server_aliases(server.get("server_aliases"), index)
         server_id = str(server["server_id"])
         game = str(server["game"]).strip().lower()
@@ -107,6 +108,7 @@ def load_config(config_path):
                 "status_command": str(status_command or ""),
                 "start_command": str(start_command or ""),
                 "stop_command": str(stop_command or ""),
+                "save_data_path": str(save_data_path or ""),
             }
         )
 

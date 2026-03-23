@@ -39,3 +39,5 @@ servers:
     # Craftopia 本体ログからは入退室を安定検知しにくいため、
     # tcpdump 等で生成した接続ログを別ファイルで監視する。
     presence_log_path: /home/enirin/game-servers/craftopia/craftopia-connections.log
+    # 任意: 指定するとセーブDBから latestDay を読み取り day に反映する。
+    save_data_path: /home/enirin/game-servers/craftopia/data

@@ -120,8 +120,8 @@ def read_container_metrics(container):
         cpu_delta = cpu_total - prev_cpu_total
         system_delta = system_total - prev_system_total
         if system_delta > 0:
-            online_cpus = stats.get("cpu_stats", {}).get("online_cpus", 1)
-            cpu_pct = round((cpu_delta / system_delta) * online_cpus * 100.0, 1)
+            normalized_cpu_pct = (cpu_delta / system_delta) * 100.0
+            cpu_pct = round(max(0.0, min(normalized_cpu_pct, 100.0)), 1)
     except Exception:
         pass
 
