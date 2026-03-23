@@ -1,0 +1,34 @@
+services:
+  craftopia:
+    image: kagurazakanyaa/craftopia:latest
+    container_name: craftopia-server
+    restart: always
+    ports:
+      - "${CRAFTOPIA_PORT:-6587}:6587/tcp"
+      - "${CRAFTOPIA_PORT:-6587}:6587/udp"
+    environment:
+      SERVER_PASSWORD: ${CRAFTOPIA_CONTAINER_PASSWORD:-2525}
+      MAX_PLAYERS: ${CRAFTOPIA_MAX_PLAYERS:-8}
+      SERVER_NAME: ${CRAFTOPIA_SERVER_NAME:-Enirin Craftopia Server}
+      WORLD_NAME: ${CRAFTOPIA_WORLD_NAME:-NoName}
+      WORLD_DIFFICULTY: ${CRAFTOPIA_WORLD_DIFFICULTY:-1}
+      WORLD_GAME_MODE: ${CRAFTOPIA_WORLD_GAME_MODE:-1}
+      HOST_PORT: ${CRAFTOPIA_PORT:-6587}
+      HOST_MAX_PLAYER_NUMBER: ${CRAFTOPIA_HOST_MAX_PLAYERS:-32}
+      HOST_USE_PASSWORD: ${CRAFTOPIA_HOST_USE_PASSWORD:-0}
+      HOST_SERVER_PASSWORD: ${CRAFTOPIA_HOST_SERVER_PASSWORD:-00000000}
+      SAVE_AUTO_SAVE_SEC: ${CRAFTOPIA_AUTO_SAVE_SEC:-300}
+      SAVE_AUTO_SAVE_PER_HOUR: ${CRAFTOPIA_AUTO_SAVE_PER_HOUR:-1}
+      FORCE_UPDATE: ${CRAFTOPIA_FORCE_UPDATE:-false}
+      ENABLE_MOD: ${CRAFTOPIA_ENABLE_MOD:-false}
+    volumes:
+      - craftopia_bepinex_config:/opt/craftopia/BepInEx/config
+      - craftopia_bepinex_plugins:/opt/craftopia/BepInEx/plugins
+      - ${CRAFTOPIA_DATA_DIR:-/home/enirin/game-servers/craftopia/data}:/opt/craftopia/DedicatedServerSave
+      - ${CRAFTOPIA_DATA_DIR:-/home/enirin/game-servers/craftopia/data}:/opt/craftopiaDedicatedServerSave
+
+volumes:
+  craftopia_bepinex_config:
+    name: ${CRAFTOPIA_BEPINEX_CONFIG_VOLUME:-craftopia-bepinex-config}
+  craftopia_bepinex_plugins:
+    name: ${CRAFTOPIA_BEPINEX_PLUGINS_VOLUME:-craftopia-bepinex-plugins}
