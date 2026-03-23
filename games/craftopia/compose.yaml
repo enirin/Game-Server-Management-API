@@ -2,6 +2,9 @@ services:
   craftopia:
     image: kagurazakanyaa/craftopia:latest
     container_name: craftopia-server
+    entrypoint:
+      - /bin/bash
+      - /compose-entrypoint.sh
     restart: always
     ports:
       - "${CRAFTOPIA_PORT:-6587}:6587/tcp"
@@ -22,6 +25,8 @@ services:
       FORCE_UPDATE: ${CRAFTOPIA_FORCE_UPDATE:-false}
       ENABLE_MOD: ${CRAFTOPIA_ENABLE_MOD:-false}
     volumes:
+      - ./compose-entrypoint.sh:/compose-entrypoint.sh:ro
+      - ${CRAFTOPIA_INSTALL_DIR:-/home/enirin/game-servers/craftopia/app}:/opt/craftopia
       - craftopia_bepinex_config:/opt/craftopia/BepInEx/config
       - craftopia_bepinex_plugins:/opt/craftopia/BepInEx/plugins
       - ${CRAFTOPIA_DATA_DIR:-/home/enirin/game-servers/craftopia/data}:/opt/craftopia/DedicatedServerSave
