@@ -36,23 +36,31 @@ def stream_native_log_lines(log_file_path):
             yield line.rstrip("\r\n")
 
 
+def get_presence_log_stream(server_config):
+    presence_log_path = server_config.get("presence_log_path")
+    if presence_log_path:
+        return stream_native_log_lines(presence_log_path), presence_log_path
+
+    runtime = server_config["runtime"]
+    if runtime == "docker":
+        container_name = server_config["container_name"]
+        return stream_docker_log_lines(container_name), container_name
+
+    log_file_path = server_config["log_file_path"]
+    return stream_native_log_lines(log_file_path), log_file_path or "native"
+
+
 def watch_server_logs(notifier, server_config):
     server_id = server_config["server_id"]
     game = server_config["game"]
-    runtime = server_config["runtime"]
-    container_name = server_config["container_name"]
-    log_file_path = server_config["log_file_path"]
     channel_id = server_config.get("channel_id")
     plugin = create_game_plugin(game)
-    source_name = container_name if runtime == "docker" else (log_file_path or "native")
+    _, source_name = get_presence_log_stream(server_config)
     log_prefix = f"[{server_id}/{source_name}]"
 
     while True:
         try:
-            if runtime == "docker":
-                stream_log_lines = stream_docker_log_lines(container_name)
-            else:
-                stream_log_lines = stream_native_log_lines(log_file_path)
+            stream_log_lines, _ = get_presence_log_stream(server_config)
 
             for message in stream_log_lines:
                 if not message:

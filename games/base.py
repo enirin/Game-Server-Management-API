@@ -16,6 +16,7 @@ class ServerStatusContext:
     runtime: str
     status: str
     logs_text: str = ""
+    presence_logs_text: str = ""
     cpu_pct: float = 0.0
     mem_gb: float = 0.0
 

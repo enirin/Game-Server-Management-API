@@ -8,7 +8,7 @@ discord:
 
 servers:
   - server_id: 7d2d
-    server_aliases: [7days, seven_days_to_die, "セブンデイズ", "7大豆"]
+    server_aliases: [7days, "せぶんでいず", "セブンデイズ", "7大豆"]
     game: 7days2die
     runtime: native
     address: 192.168.1.10
@@ -21,10 +21,21 @@ servers:
     channel_id: 123456789012345678
 
   - server_id: valheim
-    server_aliases: [vh, "ヴァルヘイム"]
+    server_aliases: [vh, "ヴぁるへいむ", "ヴァルヘイム"]
     game: valheim
     runtime: docker
     container_name: valheim-server01
     address: 192.168.1.11
     max_players: 10
     # channel_id を省略すると Discord Bot 側の既定送信先を使用
+
+  - server_id: craftopia
+    server_aliases: ["くらふとぴあ", "クラフトピア"]
+    game: craftopia
+    runtime: docker
+    container_name: craftopia-server
+    address: 192.168.1.12:6587
+    max_players: 8
+    # Craftopia 本体ログからは入退室を安定検知しにくいため、
+    # tcpdump 等で生成した接続ログを別ファイルで監視する。
+    presence_log_path: /home/enirin/game-servers/craftopia/craftopia-connections.log

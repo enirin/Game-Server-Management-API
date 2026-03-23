@@ -53,10 +53,22 @@ def finalize_server_status(plugin, server_config, status_payload, runtime, statu
         runtime=runtime,
         status=status,
         logs_text=logs_text,
+        presence_logs_text=logs_text,
         cpu_pct=cpu_pct,
         mem_gb=mem_gb,
     )
     return plugin.extend_server_status(status_payload, context)
+
+
+def read_log_tail(log_file_path, max_bytes=1024 * 1024):
+    if not log_file_path:
+        return ""
+
+    with open(log_file_path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        size = f.tell()
+        f.seek(max(size - max_bytes, 0), os.SEEK_SET)
+        return f.read().decode("utf-8", errors="ignore")
 
 
 def build_offline_status(server_config):
@@ -122,6 +134,7 @@ def build_server_status(server_config):
     runtime = server_config["runtime"]
     container_name = server_config["container_name"]
     log_file_path = server_config["log_file_path"]
+    presence_log_path = server_config.get("presence_log_path", "")
     address = server_config["address"]
     max_players = server_config["max_players"]
     plugin = create_game_plugin(game)
@@ -130,16 +143,18 @@ def build_server_status(server_config):
         status = get_native_server_status(server_config)
         day = 0
         logs_text = ""
+        presence_logs_text = ""
         if status == "online":
             try:
-                with open(log_file_path, "rb") as f:
-                    f.seek(0, os.SEEK_END)
-                    size = f.tell()
-                    f.seek(max(size - 1024 * 1024, 0), os.SEEK_SET)
-                    logs_text = f.read().decode("utf-8", errors="ignore")
+                logs_text = read_log_tail(log_file_path)
                 day = plugin.extract_day(logs_text)
             except Exception:
                 day = 0
+
+            try:
+                presence_logs_text = read_log_tail(presence_log_path or log_file_path)
+            except Exception:
+                presence_logs_text = logs_text
         payload = {
             "name": server_id,
             "server_aliases": server_config["server_aliases"],
@@ -152,7 +167,14 @@ def build_server_status(server_config):
             },
             "day": day,
         }
-        return finalize_server_status(plugin, server_config, payload, runtime, status, logs_text=logs_text)
+        context = ServerStatusContext(
+            server_config=server_config,
+            runtime=runtime,
+            status=status,
+            logs_text=logs_text,
+            presence_logs_text=presence_logs_text,
+        )
+        return plugin.extend_server_status(payload, context)
 
     try:
         client = get_docker_client()
@@ -162,6 +184,7 @@ def build_server_status(server_config):
         cpu_pct, mem_gb = 0.0, 0.0
         day = 0
         logs_text = ""
+        presence_logs_text = ""
         if status == "online":
             cpu_pct, mem_gb = read_container_metrics(container)
             try:
@@ -169,6 +192,11 @@ def build_server_status(server_config):
                 day = plugin.extract_day(logs_text)
             except Exception:
                 day = 0
+
+            try:
+                presence_logs_text = read_log_tail(presence_log_path) if presence_log_path else logs_text
+            except Exception:
+                presence_logs_text = logs_text
 
         payload = {
             "name": server_id,
@@ -182,16 +210,16 @@ def build_server_status(server_config):
             },
             "day": day,
         }
-        return finalize_server_status(
-            plugin,
-            server_config,
-            payload,
-            runtime,
-            status,
+        context = ServerStatusContext(
+            server_config=server_config,
+            runtime=runtime,
+            status=status,
             logs_text=logs_text,
+            presence_logs_text=presence_logs_text,
             cpu_pct=cpu_pct,
             mem_gb=mem_gb,
         )
+        return plugin.extend_server_status(payload, context)
     except DockerUnavailableError:
         return build_offline_status(server_config)
     except DOCKER_NOT_FOUND_ERRORS:

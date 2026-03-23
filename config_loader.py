@@ -66,6 +66,7 @@ def load_config(config_path):
 
         container_name = server.get("container_name")
         log_file_path = server.get("log_file_path")
+        presence_log_path = server.get("presence_log_path")
         process_name = server.get("process_name")
         status_command = server.get("status_command")
         start_command = server.get("start_command")
@@ -101,6 +102,7 @@ def load_config(config_path):
                 "server_aliases": server_aliases,
                 "channel_id": channel_id,
                 "log_file_path": str(log_file_path or ""),
+                "presence_log_path": str(presence_log_path or ""),
                 "process_name": str(process_name or ""),
                 "status_command": str(status_command or ""),
                 "start_command": str(start_command or ""),

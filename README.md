@@ -54,7 +54,6 @@ cp config.yaml.sample config.yaml
 - `server_runtime.py`: サーバー状態取得、および `start/stop` 実行ロジック（docker/native）
 - `log_watcher.py`: リアルタイムログ追従、ログ解析器呼び出し、Discord `/tell` 通知トリガー
 - `games/`: ゲーム固有プラグイン群のルート
-- `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成
 - `games/<plugin_name>/plugin.py`: ゲーム固有のログ解析、日数抽出、tell向け文面生成、ステータス拡張
 - `games/<plugin_name>/MAINTENANCE.md`: ゲーム別の保守仕様、実ログ例、通知方針
 - `games/registry.py`: `games/*/plugin.py` の自動探索と `game` エイリアス解決
@@ -108,19 +107,29 @@ servers:
     container_name: valheim-server01
     address: 192.168.1.11
     max_players: 10
+
+  - server_id: craftopia
+    server_aliases: [cp, craft]
+    game: craftopia
+    runtime: docker
+    container_name: craftopia-server
+    address: 192.168.1.12:6587
+    max_players: 8
+    presence_log_path: /home/enirin/game-servers/craftopia/craftopia-connections.log
 ```
 
 各項目の意味:
 
 - `server_id`: API上の識別名 (`/start/{server_name}` の `server_name`)
 - `server_aliases` (任意): 自然言語での同定に使う別名一覧。`/list` の `server_aliases` にそのまま返却
-- `game`: ログ解析器の種別 (`7days2die` / `7d2d` / `7daystodie` または `valheim`)
+- `game`: ログ解析器の種別 (`7days2die` / `7d2d` / `7daystodie` / `valheim` / `craftopia`)
 - `runtime`: `docker` または `native`（省略時は `docker`）
 - `container_name`: Docker 上のコンテナ名（`runtime=docker` のとき必須）
 - `address`: クライアント向け表示用アドレス
 - `max_players`: 最大プレイヤー数（`players` の右側に使用）
 - `channel_id` (任意): `/tell` に送る Discord チャンネルID。省略時は Bot 側既定値
 - `log_file_path`: 監視ログファイルのパス（`runtime=native` のとき必須）
+- `presence_log_path` (任意): 入退室検知専用ログのパス。指定時はリアルタイム通知と人数推定でこちらを優先
 - `process_name` (任意): ネイティブプロセス名。`status_command` 未指定時の稼働判定に使用
 - `status_command` (任意): 実行終了コード0で online 判定
 - `start_command` (任意): `POST /start/{server_name}` で実行するコマンド
@@ -215,8 +224,10 @@ chmod +x start.sh
 ## 補足
 
 - `status` は `online` / `offline` / `busy` を返します。
-- `players` の現在値はゲームごとの取得方法が異なるため、現状は `0/max_players` を返します。
+- `players` の現在値はゲームごとの取得方法が異なります。`7dtd`、`valheim`、`craftopia` は専用ロジックで推定します。
 - `day` は `runtime=docker` の場合はコンテナログ、`runtime=native` の場合は `log_file_path` 末尾から抽出します。
 - API起動中は、`runtime=docker` はコンテナログ、`runtime=native` はログファイル追従でリアルタイム出力します。
 - `7dtd` と `valheim` はそれぞれ専用のログ解析ロジックを分離実装しており、接続ノイズを除外してログイン/ログアウト確定イベントだけを `/tell` 通知に使います。
+- `presence_log_path` を指定したサーバーは、`runtime` に関係なくそのファイルを入退室検知と人数推定に使います。Craftopia では `tcpdump` 等で生成した接続ログをこの用途に使う前提です。
+- Craftopia 用の接続ログ生成スクリプトは `games/craftopia/watch-craftopia-connections.sh` に同梱しています。導入手順は `games/craftopia/MAINTENANCE.md` を参照してください。
 - tellへ流す文面はゲームプラグイン側で組み立てるため、ゲームごとに歓迎/退出メッセージの方針を調整できます。
