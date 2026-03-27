@@ -12,6 +12,9 @@
 ## 利用者向け資料
 
 - Discord連携を含む構築例: `DISCORD_GAME_SERVER_MANAGEMENT_GUIDE.md`
+- MCP 移行計画: `docs/mcp-migration-plan.md`
+- MCP Phase 1 詳細設計: `docs/mcp-phase1-detailed-design.md`
+- Discord bot 向け MCP 接続契約: `docs/mcp-bot-connection-contract.md`
 
 ## アプリケーション概要
 
@@ -159,13 +162,58 @@ servers:
 - `venv` が無ければ作成
 - `requirements.txt` をインストール
 - `config.yaml` が無ければ `config.yaml.sample` から作成して停止
-- API サーバーを起動
+- 指定したモードに応じて Flask API または MCP server を起動
 
 ```bash
 cd /path/to/Game-Server-Management-API
 chmod +x start.sh
-./start.sh
+./start.sh api
+./start.sh mcp
 ```
+
+既定値は `api` です。
+
+## MCP サーバー起動
+
+Phase 1 では既存 Flask API と別プロセスで MCP サーバーを起動できます。
+
+採用 transport は `streamable HTTP` です。
+
+```bash
+cd /path/to/Game-Server-Management-API
+source venv/bin/activate
+python mcp_server.py
+```
+
+既定の待ち受け先は `http://127.0.0.1:8000/mcp` です。
+
+環境変数で変更できます。
+
+- `GAME_SERVER_CONFIG_PATH`: 読み込む `config.yaml` のパス
+- `MCP_HOST`: `config.yaml` の `mcp.host` を上書きする待ち受けホスト
+- `MCP_PORT`: `config.yaml` の `mcp.port` を上書きする待ち受けポート
+- `MCP_PATH`: `config.yaml` の `mcp.path` を上書きする MCP エンドポイントパス
+- `MCP_JSON_RESPONSE`: `config.yaml` の `mcp.json_response` を上書きする
+- `MCP_STATELESS_HTTP`: `config.yaml` の `mcp.stateless_http` を上書きする
+
+初期公開ツール:
+
+- `list_servers`
+- `get_server_status`
+- `start_server`
+- `stop_server`
+- `get_server_maintenance_notes`
+
+初期公開 resource:
+
+- `servers://catalog`
+- `servers://status`
+- `servers://status/{server_id}`
+- `games://maintenance/{game}`
+
+運用ルール:
+
+- `start_server` と `stop_server` は MCP client 側で確認フロー必須
 
 ## API 仕様
 

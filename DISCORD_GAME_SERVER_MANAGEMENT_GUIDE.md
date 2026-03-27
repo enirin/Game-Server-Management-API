@@ -6,6 +6,12 @@
 - ゲームサーバ管理API: `Game-Server-Management-API`（本リポジトリ）
 - Discord Bot（AI対話 + 外部通知受付）: https://github.com/enirin/discord-bot
 
+MCP ベースへの段階的移行方針は次の資料を参照してください。
+
+- ADR: `docs/adr/0001-mcp-based-game-server-management.md`
+- 実装計画: `docs/mcp-migration-plan.md`
+- bot 接続契約: `docs/mcp-bot-connection-contract.md`
+
 ## 1. コンセプト
 
 通常のサーバ管理は「SSHログインしてコマンド実行」が中心ですが、本構成では次を実現します。

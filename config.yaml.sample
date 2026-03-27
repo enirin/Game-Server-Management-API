@@ -1,6 +1,13 @@
 api:
   port: 5000
 
+mcp:
+  host: 127.0.0.1
+  port: 8000
+  path: /mcp
+  json_response: true
+  stateless_http: true
+
 discord:
   tell_url: http://127.0.0.1:5050/tell
   web_endpoint_token: ""

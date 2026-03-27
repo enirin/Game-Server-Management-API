@@ -5,6 +5,20 @@ import yaml
 from games import get_supported_game_aliases
 
 
+def coerce_bool(value, field_name):
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+
+    raise ValueError(f"{field_name} must be a boolean")
+
+
 def normalize_server_aliases(raw_aliases, index):
     if raw_aliases is None:
         return []
@@ -43,6 +57,17 @@ def load_config(config_path):
 
     api_cfg = config.get("api", {})
     port = int(api_cfg.get("port", 5000))
+
+    mcp_cfg = config.get("mcp", {})
+    mcp_host = str(mcp_cfg.get("host", "127.0.0.1"))
+    mcp_port = int(mcp_cfg.get("port", 8000))
+    mcp_path = str(mcp_cfg.get("path", "/mcp"))
+    mcp_json_response = coerce_bool(mcp_cfg.get("json_response", True), "mcp.json_response")
+    mcp_stateless_http = coerce_bool(mcp_cfg.get("stateless_http", True), "mcp.stateless_http")
+
+    if not mcp_path.startswith("/"):
+        raise ValueError("mcp.path must start with '/'")
+
     supported_games = set(get_supported_game_aliases())
 
     normalized_servers = []
@@ -126,5 +151,12 @@ def load_config(config_path):
         },
         "api": {
             "port": port,
+        },
+        "mcp": {
+            "host": mcp_host,
+            "port": mcp_port,
+            "path": mcp_path,
+            "json_response": mcp_json_response,
+            "stateless_http": mcp_stateless_http,
         },
     }

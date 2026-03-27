@@ -2,6 +2,15 @@
 
 set -e
 
+MODE="${1:-api}"
+
+if [ "$MODE" != "api" ] && [ "$MODE" != "mcp" ]; then
+    echo "Usage: ./start.sh [api|mcp]"
+    echo "  api: Flask API を起動します (既定値)"
+    echo "  mcp: MCP server を起動します"
+    exit 1
+fi
+
 # スクリプトがあるディレクトリ（リポジトリのルート）に移動
 cd "$(dirname "$0")"
 
@@ -21,7 +30,7 @@ fi
 
 # 依存ライブラリをインストール
 echo "📦 依存ライブラリをインストールしています..."
-./venv/bin/pip install -r requirements.txt
+./venv/bin/python -m pip install -r requirements.txt
 
 # config.yamlが存在するかチェック
 if [ ! -f "config.yaml" ]; then
@@ -37,5 +46,10 @@ if [ ! -f "config.yaml" ]; then
     exit 1
 fi
 
-echo "🚀 Botを起動しています..."
-./venv/bin/python main.py
+if [ "$MODE" = "api" ]; then
+    echo "🚀 Flask API を起動しています..."
+    ./venv/bin/python main.py
+fi
+
+echo "🚀 MCP server を起動しています..."
+./venv/bin/python mcp_server.py
