@@ -10,7 +10,8 @@ MCP ベースへの段階的移行方針は次の資料を参照してくださ�
 
 - ADR: `docs/adr/0001-mcp-based-game-server-management.md`
 - 実装計画: `docs/mcp-migration-plan.md`
-- bot 接続契約: `docs/mcp-bot-connection-contract.md`
+- MCP IF 仕様: `docs/mcp-interface-spec.md`
+- bot 運用契約: `docs/mcp-bot-connection-contract.md`
 
 ## 1. コンセプト
 

@@ -12,7 +12,9 @@
 
 Phase 1 の詳細設計は [MCP Phase 1 詳細設計](./mcp-phase1-detailed-design.md) を参照。
 
-Discord bot 実装担当者向けの接続契約は [Discord Bot 向け MCP 接続契約](./mcp-bot-connection-contract.md) を参照。
+MCP の interface 契約は [MCP Interface Specification](./mcp-interface-spec.md) を参照。
+
+Discord bot 実装担当者向けの運用契約は [Discord Bot 向け MCP 運用契約](./mcp-bot-connection-contract.md) を参照。
 
 - 管理サービス側は Flask API と MCP サーバーを併存させる
 - Discord bot 側は MCP ホストとして実装する

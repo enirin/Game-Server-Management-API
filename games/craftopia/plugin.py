@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from games.base import GamePlugin, PresenceEvent, ServerStatusContext
+from ip_player_registry import IpPlayerRegistry, endpoint_to_ip_address
 
 
 class CraftopiaPlugin(GamePlugin):
@@ -15,6 +16,9 @@ class CraftopiaPlugin(GamePlugin):
         re.IGNORECASE,
     )
 
+    def __init__(self):
+        self._ip_player_registry = IpPlayerRegistry()
+
     def parse_presence_event(self, line: str) -> Optional[PresenceEvent]:
         match = self._event_pattern.search(line.strip())
         if not match:
@@ -22,21 +26,23 @@ class CraftopiaPlugin(GamePlugin):
 
         event_type = match.group(1).lower()
         endpoint = match.group(2).strip()
-        return PresenceEvent(event_type=event_type, player_name=endpoint, source_id=endpoint)
+        ip_address = endpoint_to_ip_address(endpoint)
+        player_name = self._resolve_player_name(ip_address)
+        return PresenceEvent(event_type=event_type, player_name=player_name, source_id=ip_address)
 
     def build_presence_prompt(self, server_id: str, event: PresenceEvent) -> str:
-        endpoint = event.source_id or event.player_name
+        player_name = event.player_name
 
         if event.event_type == "login":
             return (
-                f"【システム通知】Craftopiaサーバー『{server_id}』に接続元『{endpoint}』のプレイヤーが参加しました。"
-                f" 自然で短い歓迎メッセージを作成してください。発話には必ず『{endpoint}』を含めてください。"
+                f"【システム通知】Craftopiaサーバー『{server_id}』に『{player_name}』が参加しました。"
+                f" 自然で短い歓迎メッセージを作成してください。発話には必ず『{player_name}』を含めてください。"
             )
 
         if event.event_type == "logout":
             return (
-                f"【システム通知】Craftopiaサーバー『{server_id}』で接続元『{endpoint}』のプレイヤーが退出しました。"
-                f" 自然で短いねぎらいメッセージを作成してください。発話には必ず『{endpoint}』を含めてください。"
+                f"【システム通知】Craftopiaサーバー『{server_id}』で『{player_name}』が退出しました。"
+                f" 自然で短いねぎらいメッセージを作成してください。発話には必ず『{player_name}』を含めてください。"
             )
 
         return super().build_presence_prompt(server_id, event)
@@ -134,3 +140,14 @@ class CraftopiaPlugin(GamePlugin):
                 active_endpoints.discard(endpoint)
 
         return len(active_endpoints)
+
+    def _resolve_player_name(self, ip_address: str) -> str:
+        if not ip_address:
+            return ""
+
+        try:
+            player_name = self._ip_player_registry.get_player_name(ip_address)
+        except ValueError:
+            return ip_address
+
+        return player_name or ip_address

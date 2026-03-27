@@ -1,10 +1,18 @@
-# Discord Bot 向け MCP 接続契約
+# Discord Bot 向け MCP 運用契約
 
 ## 目的
 
-この文書は、Discord bot 側リポジトリが `Game-Server-Management-API` の MCP サーバーへ接続し、読み取り系と操作系のゲームサーバー管理機能を利用するための実装契約を定義する。
+この文書は、Discord bot 側リポジトリが `Game-Server-Management-API` の MCP サーバーを利用する際の、確認フロー、会話運用、エラー再表現などのクライアント側運用契約を定義する。
 
-対象読者は Discord bot 側の実装担当者であり、設計議論ではなく接続と運用の具体を共有することを目的とする。
+MCP の純粋な interface 契約は [MCP Interface Specification](./mcp-interface-spec.md) を正本とし、本書は Discord bot 固有の責務だけを扱う。
+
+## 参照順序
+
+Discord bot 実装者は次の順で文書を参照する。
+
+1. [MCP Interface Specification](./mcp-interface-spec.md)
+2. 本書
+3. 必要に応じてゲーム別保守文書
 
 ## 接続前提
 
@@ -60,187 +68,29 @@ bot 側は MCP host として次を担う。
 
 このリポジトリ側は、権限判定や確認 UI を提供しない。
 
-## 公開 tool 一覧
+## IF 仕様の参照先
 
-### 読み取り系
+公開 tool と resource、入力と返却スキーマ、エラー契約は [MCP Interface Specification](./mcp-interface-spec.md) を参照する。
 
-#### `list_servers`
+本書では、Discord bot 側で追加解釈が必要な運用ルールのみを定義する。
 
-入力なし。
+## 操作系 tool の扱い
 
-返却例:
+次の tool は Discord bot 側で確認フロー必須とする。
 
-```json
-{
-  "servers": [
-    {
-      "name": "craftopia",
-      "server_aliases": ["くらふとぴあ", "クラフトピア"],
-      "status": "online",
-      "address": "60.70.94.179:6587",
-      "stats": {
-        "players": "1/8",
-        "cpu": 18.9,
-        "memory": 6.1
-      },
-      "day": 293
-    }
-  ]
-}
-```
+- `start_server`
+- `stop_server`
 
-利用目的:
+次の tool は通常の読み取りまたは管理操作として扱ってよい。
 
-- 一覧表示
-- 自然言語問い合わせへの候補抽出
-- server_id の曖昧性解消
+- `list_servers`
+- `get_server_status`
+- `get_server_maintenance_notes`
+- `get_ip_player_name`
+- `list_ip_player_names`
+- `register_ip_player_name`
 
-#### `get_server_status`
-
-入力:
-
-```json
-{
-  "server_id": "craftopia"
-}
-```
-
-返却例:
-
-```json
-{
-  "server": {
-    "name": "craftopia",
-    "server_aliases": ["くらふとぴあ", "クラフトピア"],
-    "status": "online",
-    "address": "60.70.94.179:6587",
-    "stats": {
-      "players": "1/8",
-      "cpu": 18.9,
-      "memory": 6.1
-    },
-    "day": 293
-  }
-}
-```
-
-#### `get_server_maintenance_notes`
-
-入力:
-
-```json
-{
-  "server_id": "craftopia"
-}
-```
-
-返却例:
-
-```json
-{
-  "server_id": "craftopia",
-  "game": "craftopia",
-  "path": "games/craftopia/MAINTENANCE.md",
-  "content": "..."
-}
-```
-
-利用目的:
-
-- エージェントにゲーム固有の保守手順を読ませる
-- 障害対応時に参照させる
-
-### 操作系
-
-#### `start_server`
-
-入力:
-
-```json
-{
-  "server_id": "craftopia"
-}
-```
-
-成功例:
-
-```json
-{
-  "success": true,
-  "message": "Server 'craftopia' is starting...",
-  "server_name": "craftopia"
-}
-```
-
-#### `stop_server`
-
-入力:
-
-```json
-{
-  "server_id": "craftopia"
-}
-```
-
-成功例:
-
-```json
-{
-  "success": true,
-  "message": "Server 'craftopia' is stopping...",
-  "server_name": "craftopia"
-}
-```
-
-## 公開 resource 一覧
-
-### `servers://catalog`
-
-静的寄りのサーバーカタログを返す。
-
-### `servers://status`
-
-全サーバーの現在状態を返す。
-
-### `servers://status/{server_id}`
-
-単一サーバーの現在状態を返す。
-
-### `games://maintenance/{game}`
-
-ゲーム別保守情報を返す。
-
-## エラー契約
-
-tool の失敗時は、少なくとも次の形式を返す。
-
-```json
-{
-  "error": {
-    "code": "not_found",
-    "message": "Server 'foo' not found",
-    "details": {
-      "server_id": "foo"
-    }
-  }
-}
-```
-
-利用する error code:
-
-- `not_found`
-- `invalid_state`
-- `runtime_unavailable`
-- `configuration_error`
-- `internal_error`
-
-bot 側推奨ハンドリング:
-
-- `not_found`: 対象サーバーが見つからない旨を案内し、候補提示へ戻る
-- `invalid_state`: すでに起動済み / 停止済みとして案内する
-- `runtime_unavailable`: 一時的障害として再試行方針を案内する
-- `configuration_error`: 運用設定異常として管理者向けメッセージへ寄せる
-- `internal_error`: 詳細を出しすぎず失敗として案内する
+`register_ip_player_name` は書き込み系だが、サーバー起動停止と違って破壊的操作ではないため、必須確認対象には含めない。
 
 ## 確認フロー契約
 
@@ -296,21 +146,67 @@ bot 側は少なくとも次を pending 操作として保持できること。
 - タイムアウト後は pending 操作を破棄
 - 再度依頼してくださいと案内する
 
+## IP プレイヤー名マッピングの運用規約
+
+Craftopia 向けの IP プレイヤー名マッピングは、Discord bot 側では次のように扱う。
+
+### 目的
+
+- 接続元 `IP:port` を人が識別しやすいプレイヤー名へ寄せる
+- 未登録接続元の棚卸しをしやすくする
+
+### bot 側推奨ユースケース
+
+1. 管理者が `register_ip_player_name` を明示的に実行して登録する
+2. 必要に応じて `get_ip_player_name` で単体確認する
+3. 定期メンテナンスや問い合わせ時に `list_ip_player_names` で一覧確認する
+
+### クライアント側の前提解釈
+
+- `ip_address` は `IP` でも `IP:port` でも入力可能とみなしてよい
+- server 側で正規化されるため、bot 側で port を除去する前処理は必須ではない
+- 未登録時、Craftopia 通知表示は `IP` にフォールバックする
+- port は通知表示に使われない
+
+### UX 上の注意
+
+- IP マッピング登録は server 起動停止ほど危険ではないが、入力ミスが起きやすい
+- bot 側で登録結果の normalized IP をそのまま表示し、保存結果を明示するのが望ましい
+- 未登録 IP を案内するときは、port を含めず IP のみを出す
+
+## エラー再表現方針
+
+error code 自体の契約は [MCP Interface Specification](./mcp-interface-spec.md) を参照する。
+
+Discord bot 側推奨ハンドリング:
+
+- `not_found`: 対象が見つからない旨を案内し、候補提示へ戻る
+- `invalid_state`: すでに起動済みまたは停止済みとして案内する
+- `runtime_unavailable`: 一時的障害として再試行方針を案内する
+- `configuration_error`: 運用設定異常として管理者向けメッセージへ寄せる
+- `internal_error`: 詳細を出しすぎず失敗として案内する
+
 ## 推奨会話フロー
 
 ### 読み取り系
 
-1. ユーザーが状態照会を依頼
-2. bot が `list_servers` または `get_server_status` を呼ぶ
+1. ユーザーが状態照会または情報確認を依頼する
+2. bot が適切な read tool を呼ぶ
 3. bot が自然文に整形して返す
 
 ### 操作系
 
-1. ユーザーが起動または停止を依頼
+1. ユーザーが起動または停止を依頼する
 2. bot が対象サーバーを確定する
 3. bot が確認メッセージを返す
 4. ユーザーが肯定したら operation tool を呼ぶ
 5. bot が結果を返す
+
+### IP プレイヤー名登録
+
+1. 管理者が IP または IP:port とプレイヤー名の対応付けを依頼する
+2. bot が `register_ip_player_name` を呼ぶ
+3. bot が normalized IP と保存結果を返す
 
 ## 接続確認手順
 
@@ -320,7 +216,7 @@ bot 側の実装前に次を満たすこと。
 2. `http://127.0.0.1:8000/mcp` に `streamable HTTP` client で接続できる
 3. `initialize` が成功する
 4. `list_tools` で想定 tool が見える
-5. `list_servers` が成功する
+5. [MCP Interface Specification](./mcp-interface-spec.md) に記載された必須 tool が利用可能である
 
 このリポジトリでは上記 1 から 5 の疎通確認済み。
 

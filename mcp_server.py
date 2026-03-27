@@ -115,6 +115,37 @@ def get_server_maintenance_notes(server_id: str) -> dict:
         return _internal_error_payload(str(error))
 
 
+@mcp.tool()
+def register_ip_player_name(ip_address: str, player_name: str) -> dict:
+    """Register or update a persistent IP-to-player-name mapping used by presence notifications."""
+    try:
+        return service.register_ip_player_name(ip_address, player_name)
+    except ValueError as error:
+        return _internal_error_payload(str(error))
+    except Exception as error:
+        return _internal_error_payload(str(error))
+
+
+@mcp.tool()
+def get_ip_player_name(ip_address: str) -> dict:
+    """Resolve a registered player name for an IP address."""
+    try:
+        return service.get_ip_player_name(ip_address)
+    except ValueError as error:
+        return _internal_error_payload(str(error))
+    except Exception as error:
+        return _internal_error_payload(str(error))
+
+
+@mcp.tool()
+def list_ip_player_names() -> dict:
+    """List all persistent IP-to-player-name mappings."""
+    try:
+        return service.list_ip_player_names()
+    except Exception as error:
+        return _internal_error_payload(str(error))
+
+
 @mcp.resource("servers://catalog")
 def servers_catalog() -> str:
     """Static catalog of the managed servers."""

@@ -4,6 +4,7 @@ from http import HTTPStatus
 from typing import Any
 
 from games import create_game_plugin
+from ip_player_registry import IpPlayerRegistry, normalize_ip_address
 from server_runtime import build_server_status, start_server_instance, stop_server_instance
 
 
@@ -52,10 +53,16 @@ class InternalManagementError(ManagementError):
 
 
 class ManagementService:
-    def __init__(self, servers: list[dict[str, Any]], base_dir: str | None = None):
+    def __init__(
+        self,
+        servers: list[dict[str, Any]],
+        base_dir: str | None = None,
+        ip_player_registry: IpPlayerRegistry | None = None,
+    ):
         self._servers = list(servers)
         self._servers_by_id = {server["server_id"]: server for server in self._servers}
         self._base_dir = base_dir or os.path.dirname(__file__)
+        self._ip_player_registry = ip_player_registry or IpPlayerRegistry()
 
     def list_servers(self) -> dict[str, list[dict[str, Any]]]:
         return {"servers": [build_server_status(server) for server in self._servers]}
@@ -116,6 +123,29 @@ class ManagementService:
             "game": game,
             "path": self._relative_to_base(maintenance_path),
             "content": content,
+        }
+
+    def register_ip_player_name(self, ip_address: str, player_name: str) -> dict[str, Any]:
+        entry = self._ip_player_registry.set_player_name(ip_address, player_name)
+        return {
+            "ip_address": entry["ip_address"],
+            "player_name": entry["player_name"],
+            "path": self._relative_to_base(entry["path"]),
+        }
+
+    def get_ip_player_name(self, ip_address: str) -> dict[str, Any]:
+        normalized_ip = normalize_ip_address(ip_address)
+        player_name = self._ip_player_registry.get_player_name(normalized_ip)
+        return {
+            "ip_address": normalized_ip,
+            "player_name": player_name,
+            "found": player_name is not None,
+        }
+
+    def list_ip_player_names(self) -> dict[str, Any]:
+        return {
+            "path": self._relative_to_base(str(self._ip_player_registry.path)),
+            "mappings": self._ip_player_registry.list_entries(),
         }
 
     def _get_server(self, server_id: str) -> dict[str, Any]:

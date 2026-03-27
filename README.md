@@ -14,7 +14,8 @@
 - Discord連携を含む構築例: `DISCORD_GAME_SERVER_MANAGEMENT_GUIDE.md`
 - MCP 移行計画: `docs/mcp-migration-plan.md`
 - MCP Phase 1 詳細設計: `docs/mcp-phase1-detailed-design.md`
-- Discord bot 向け MCP 接続契約: `docs/mcp-bot-connection-contract.md`
+- MCP IF 仕様: `docs/mcp-interface-spec.md`
+- Discord bot 向け MCP 運用契約: `docs/mcp-bot-connection-contract.md`
 
 ## アプリケーション概要
 
@@ -25,6 +26,7 @@
 - Docker / ネイティブプロセスの停止
 - 各ゲームサーバーコンテナログのリアルタイム標準出力
 - ログからのログイン/ログアウト検知と Discord Bot `/tell` 連携
+- Craftopia 用の接続元 IP とプレイヤー名の永続マッピング
 
 `/list` の返却項目は `api_contract.md` の `ServerStatus` に準拠しています。
 
@@ -62,6 +64,7 @@ cp config.yaml.sample config.yaml
 - `games/registry.py`: `games/*/plugin.py` の自動探索と `game` エイリアス解決
 - `log_parsers.py`: 旧インポート互換レイヤー（新規実装では原則未使用）
 - `discord_notifier.py`: `/tell` 送信と共通プロンプト組み立て
+- `ip_player_registry.py`: 接続元 IP とプレイヤー名の共通マッピングをテキストファイルへ永続化
 
 ## 新しいゲーム対応（コントリビュータ向け）
 
@@ -190,6 +193,7 @@ python mcp_server.py
 環境変数で変更できます。
 
 - `GAME_SERVER_CONFIG_PATH`: 読み込む `config.yaml` のパス
+- `GAME_SERVER_IP_PLAYER_MAP_PATH`: Craftopia などで使う IP とプレイヤー名のマッピングファイルパス。既定値はリポジトリ直下の `ip_player_map.txt`
 - `MCP_HOST`: `config.yaml` の `mcp.host` を上書きする待ち受けホスト
 - `MCP_PORT`: `config.yaml` の `mcp.port` を上書きする待ち受けポート
 - `MCP_PATH`: `config.yaml` の `mcp.path` を上書きする MCP エンドポイントパス
@@ -203,6 +207,9 @@ python mcp_server.py
 - `start_server`
 - `stop_server`
 - `get_server_maintenance_notes`
+- `register_ip_player_name`
+- `get_ip_player_name`
+- `list_ip_player_names`
 
 初期公開 resource:
 
@@ -280,5 +287,7 @@ python mcp_server.py
 - API起動中は、`runtime=docker` はコンテナログ、`runtime=native` はログファイル追従でリアルタイム出力します。
 - `7dtd` と `valheim` はそれぞれ専用のログ解析ロジックを分離実装しており、接続ノイズを除外してログイン/ログアウト確定イベントだけを `/tell` 通知に使います。
 - `presence_log_path` を指定したサーバーは、`runtime` に関係なくそのファイルを入退室検知と人数推定に使います。Craftopia では `tcpdump` 等で生成した接続ログをこの用途に使う前提です。
+- Craftopia の通知は接続元 `IP:port` をそのまま出さず、まず `IP` に正規化して共通マッピングを逆引きします。登録済みならプレイヤー名、未登録なら `IP` のみを使います。
+- IP とプレイヤー名のマッピングは `register_ip_player_name` で MCP 経由に登録でき、テキストファイルへ永続化されます。
 - Craftopia 用の接続ログ生成スクリプトは `games/craftopia/watch-craftopia-connections.sh` に同梱しています。導入手順は `games/craftopia/MAINTENANCE.md` を参照してください。
 - tellへ流す文面はゲームプラグイン側で組み立てるため、ゲームごとに歓迎/退出メッセージの方針を調整できます。

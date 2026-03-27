@@ -1,11 +1,14 @@
+import tempfile
 import unittest
 from unittest.mock import patch
 
+from ip_player_registry import IpPlayerRegistry
 from management_service import ConfigurationError, ManagementService, ServerNotFoundError
 
 
 class ManagementServiceTest(unittest.TestCase):
     def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
         self.servers = [
             {
                 "server_id": "craftopia",
@@ -24,7 +27,15 @@ class ManagementServiceTest(unittest.TestCase):
                 "save_data_path": "",
             }
         ]
-        self.service = ManagementService(self.servers, base_dir="/home/enirin/work/Game-Server-Management-API")
+        self.registry = IpPlayerRegistry(f"{self.temp_dir.name}/ip-player-map.txt")
+        self.service = ManagementService(
+            self.servers,
+            base_dir="/home/enirin/work/Game-Server-Management-API",
+            ip_player_registry=self.registry,
+        )
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
 
     @patch("management_service.build_server_status")
     def test_list_servers_builds_payload_for_all_servers(self, build_server_status_mock):
@@ -62,6 +73,20 @@ class ManagementServiceTest(unittest.TestCase):
         self.assertEqual("craftopia", result["game"])
         self.assertTrue(result["path"].endswith("games/craftopia/MAINTENANCE.md"))
         self.assertIn("Craftopia", result["content"])
+
+    def test_register_ip_player_name_persists_mapping(self):
+        result = self.service.register_ip_player_name("203.0.113.10:54000", "Alice")
+
+        self.assertEqual("203.0.113.10", result["ip_address"])
+        self.assertEqual("Alice", result["player_name"])
+        self.assertEqual("Alice", self.registry.get_player_name("203.0.113.10"))
+
+    def test_get_ip_player_name_reports_missing_mapping(self):
+        result = self.service.get_ip_player_name("203.0.113.11:55000")
+
+        self.assertEqual("203.0.113.11", result["ip_address"])
+        self.assertIsNone(result["player_name"])
+        self.assertFalse(result["found"])
 
 
 if __name__ == "__main__":

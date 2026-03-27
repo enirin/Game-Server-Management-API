@@ -24,6 +24,7 @@ Craftopia の dedicated server ログには、この API が安定して解釈�
 ## 実装している挙動
 
 - `parse_presence_event()` は `LOGIN` / `LOGOUT` 行を在席イベントに変換します。
+- 接続元は `IP:port` ではなく `IP` に正規化し、共通マッピングに登録済みなら通知ではプレイヤー名を使います。
 - `extend_server_status()` は接続ログを再生し、まだ退出していない接続元の数から現在人数を推定します。
 - `day` は Craftopia のセーブ DB に入っている `WorldSave.latestDay` から読み取ります。
 - `save_data_path` が未指定でも、`presence_log_path` または `log_file_path` の親ディレクトリ配下にある `data/Worlds/*.db` を自動検出できる構成では日数を読み取れます。
@@ -47,7 +48,8 @@ Compose 定義は [compose.yaml](./compose.yaml) を参照します。
 - Docker 管理の Craftopia でも、コンテナの online / offline 状態や CPU / メモリ使用量は Docker 側から取得します。
 - リアルタイム通知と現在人数の推定は、`servers[].presence_log_path` に指定したログファイルを使います。
 - ゲーム内日数の取得元は標準出力ログではなくセーブ DB です。確実に読み取らせたい場合は `servers[].save_data_path` に `DedicatedServerSave` のホスト側パスを指定してください。
-- この方式ではプレイヤーをゲーム内名ではなく接続元 endpoint で識別するため、Discord 通知にも endpoint が含まれます。
+- プレイヤー名の登録は MCP の `register_ip_player_name` tool から行い、既定ではリポジトリ直下の `ip_player_map.txt` へ保存します。別パスにしたい場合は `GAME_SERVER_IP_PLAYER_MAP_PATH` を設定してください。
+- 未登録の接続元は通知でも人数推定でも `IP` 単位で扱い、`port` は無視します。
 - `CRAFTOPIA_INSTALL_DIR` を空ディレクトリへ向けると、image 側の `/opt/craftopia` は mount で隠れます。初回導入時は設定ファイルを明示的に作るか、image からコピーしてください。
 - `docker compose pull && docker compose up -d` だけでは、クライアントとサーバーのゲームビルド差分は解消されない場合があります。
 
